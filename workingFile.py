@@ -2,8 +2,8 @@
 from cmu_graphics import *
 
 def onAppStart(app):
-    app.rows = 5
-    app.cols = 5
+    app.rows = 15
+    app.cols = 15
     app.boardLeft = 50
     app.boardTop = 75
     app.boardWidth = 400
@@ -15,6 +15,7 @@ def onAppStart(app):
 def redrawAll(app):
     drawBoard(app)
     drawBoardBorder(app)
+    drawLabel('Escaping studio before 3AM', app.width//2, 50, size = 20)
 
 def drawBoard(app):
     for row in range(app.rows):
