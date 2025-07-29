@@ -2,9 +2,24 @@
 from cmu_graphics import *
 import random
 
+
+class roomTree:
+    def __init__(self, roomLeft, roomTop, roomWidth, roomHeight, depth=0):
+        self.roomLeft = roomLeft
+        self.roomTop = roomTop
+        self.roomWidth = roomWidth
+        self.roomHeight = roomHeight
+        self.depth = depth
+        self.childA = None
+        self.childB = None
+    
+    def isLeaf(self):
+        return self.childA == None and self.childB == None
+
+
 def onAppStart(app):
-    app.rows = 12
-    app.cols = 12
+    app.rows = 16
+    app.cols = 16
     app.boardLeft = 50
     app.boardTop = 75
     app.boardWidth = 400
@@ -13,14 +28,14 @@ def onAppStart(app):
     app.width = 500
     app.height = 500
     app.curRoomLength = 12
+    app.roomTreeRoot = splitDungeon(app, 0, 0, app.cols, app.rows, 0, 8)
 
 def redrawAll(app):
-    drawRect(50, 74, 400, 400, fill ='lightBlue')
+    drawRect(50, 74, 400, 400, fill =None)
     drawBoard(app)
     drawBoardBorder(app)
     drawLabel('Escaping studio before 3AM', app.width//2, 50, size = 20)
-    splitDungeonHorizontal(app)
-    
+    drawRoomOnTree(app, app.roomTreeRoot)
 
 def drawBoard(app):
     for row in range(app.rows):
@@ -53,44 +68,52 @@ def getCellSize(app):
 
 #Draw Dungeon
 
-def drawDungeonCell(app, row, col):
+def drawRoomOnTree(app, node):
+    if node.isLeaf():
+        drawRoom(app, node.roomLeft, node.roomTop, node.roomWidth, node.roomHeight)
+        return
+    else:
+        drawRoomOnTree(app, node.childA)
+        drawRoomOnTree(app, node.childB)
+        return
+
+def drawRoom(app, roomLeft, roomTop, roomWidth, roomHeight):
+    fillColor = rgb(random.randint(100, 255),random.randint(100, 255), random.randint(100, 255))
+    for row in range(roomTop, roomTop+roomHeight):
+        for col in range(roomLeft, roomLeft+roomWidth):
+            if (0<=row<app.rows) and (0<= col < app.cols):
+                drawDungeonCell(app, row, col, fillColor)
+
+def splitDungeon(app, roomLeft, roomTop, roomWidth, roomHeight, depth, maxDepth = 8):
+    minSize = 3
+    newNode = roomTree(roomLeft, roomTop, roomWidth, roomHeight, depth)
+    if depth >= maxDepth or roomWidth <=minSize or roomHeight <=minSize:
+        return newNode
+    else:
+        splitHorizontally = random.choice([True, False])
+        if splitHorizontally:
+            splitNum = random.randint(2, roomHeight-2)
+            if roomHeight - splitNum <= minSize :
+                return newNode
+            newNode.childA = splitDungeon(app, roomLeft, roomTop, roomWidth, splitNum, depth+1, maxDepth)
+            newNode.childB = splitDungeon(app, roomLeft, roomTop+splitNum, roomWidth, roomHeight - splitNum, depth+1, maxDepth)
+        
+        else:#split vertically
+            splitNum = random.randint(2, roomWidth-2)
+            if roomWidth-splitNum <= minSize :
+                return newNode
+            newNode.childA = splitDungeon(app, roomLeft, roomTop, splitNum, roomHeight, depth+1, maxDepth)
+            newNode.childB = splitDungeon(app, roomLeft+splitNum, roomTop, roomWidth-splitNum, roomHeight, depth+1, maxDepth)
+        return newNode
+    
+def drawDungeonCell(app, row, col, fillColor='pink'):
     cellLeft, cellTop = getCellLeftTop(app, row, col)
     cellWidth, cellHeight = getCellSize(app)
     drawRect(cellLeft, cellTop, cellWidth, cellHeight,
-             fill='pink', border='black',
+             fill=fillColor, border='black',
              borderWidth=app.cellBorderWidth)
 
-def splitDungeonHorizontal(app):
-    #draw starting cell
-    curRoomLength = app.rows
-    row = random.randint(3, curRoomLength-3)
-    col = 0
-    drawDungeonCell(app, row, col)
-    for i in range (app.curRoomLength):
-        drawDungeonCell(app, row, col+i)
-    if app.rows - row < 2:
-        splitDungeonHorizontal(app)
 
-def splitDungeonVertical(app):
-    curRoomHeight = app.cols
-    col = random.randint(3, curRoomHeight-3)
-    row = 0
-    drawDungeonCell(app, row, col)
-    for i in range (app.curRoomLength):
-        drawDungeonCell(app, row+1, col)
-    if app.cols - col < 2:
-        splitDungeonVertical(app)
-
-def splitDungeon(app, maxDepth = 3, depth=0):
-    if depth == maxDepth:
-        return
-    else:
-        curSplit = random.choice(['horizontal', 'vertical'])
-        if curSplit == 'horizontal':
-            splitDungeonHorizontal(app)
-        elif curSplit == 'vertical':
-            splitDungeonVertical(app)
-        return splitDungeon(app, maxDepth = 3, depth)
 
 
 
