@@ -2,7 +2,8 @@
 from cmu_graphics import *
 import random
 
-
+#tree that stores room information
+#each room has two children rooms because I am dividing each room binarily
 class roomTree:
     def __init__(self, roomLeft, roomTop, roomWidth, roomHeight, depth=0):
         self.roomLeft = roomLeft
@@ -12,23 +13,30 @@ class roomTree:
         self.depth = depth
         self.childA = None
         self.childB = None
+        centerRow = roomTop+1 + roomHeight // 2
+        centerCol = roomLeft+1 + roomWidth // 2
+
+        self.roomCenter = (centerRow, centerCol)
     
     def isLeaf(self):
         return self.childA == None and self.childB == None
 
 
 def onAppStart(app):
-    app.rows = 16
-    app.cols = 16
+    app.rows = 20
+    app.cols = 20
     app.boardLeft = 50
     app.boardTop = 75
     app.boardWidth = 400
     app.boardHeight = 400
-    app.cellBorderWidth = 2
+    app.cellBorderWidth = 0.5
     app.width = 500
     app.height = 500
     app.curRoomLength = 12
     app.roomTreeRoot = splitDungeon(app, 0, 0, app.cols, app.rows, 0, 8)
+    app.wallPositions = set()
+    app.floorPositions = set()
+    connectRooms(app, app.roomTreeRoot)
 
 def redrawAll(app):
     drawRect(50, 74, 400, 400, fill =None)
@@ -36,6 +44,11 @@ def redrawAll(app):
     drawBoardBorder(app)
     drawLabel('Escaping studio before 3AM', app.width//2, 50, size = 20)
     drawRoomOnTree(app, app.roomTreeRoot)
+    drawWall(app)
+    for row in range (app.rows):
+        for col in range(app.cols):
+            if row == 0 or row == app.rows-1 or col == 0 or col == app.cols-1:
+                drawDungeonCell(app, row, col, fillColor='brown')
 
 def drawBoard(app):
     for row in range(app.rows):
@@ -78,28 +91,41 @@ def drawRoomOnTree(app, node):
         return
 
 def drawRoom(app, roomLeft, roomTop, roomWidth, roomHeight):
-    fillColor = rgb(random.randint(100, 255),random.randint(100, 255), random.randint(100, 255))
+    drows = (-1, 0, 1)
+    dcols = (-1, 0, 1)
+    fillColor = None
     for row in range(roomTop, roomTop+roomHeight):
         for col in range(roomLeft, roomLeft+roomWidth):
-            if (0<=row<app.rows) and (0<= col < app.cols):
+            if row == roomTop or col == roomLeft:
+                continue
+            else:
                 drawDungeonCell(app, row, col, fillColor)
+                app.floorPositions.add((row, col))
+    
+    for row in range(roomTop, roomTop + roomHeight):
+        for col in range(roomLeft, roomLeft + roomWidth):
+            if (row == roomTop or row == roomTop + roomHeight - 1 or
+                col == roomLeft or col == roomLeft + roomWidth - 1):
+                if (row, col) not in app.floorPositions:
+                    app.wallPositions.add((row, col))
 
-def splitDungeon(app, roomLeft, roomTop, roomWidth, roomHeight, depth, maxDepth = 8):
-    minSize = 3
+
+def splitDungeon(app, roomLeft, roomTop, roomWidth, roomHeight, depth, maxDepth = 16):
+    minSize = 6
     newNode = roomTree(roomLeft, roomTop, roomWidth, roomHeight, depth)
-    if depth >= maxDepth or roomWidth <=minSize or roomHeight <=minSize:
+    if depth == maxDepth or roomWidth <=minSize or roomHeight <=minSize:
         return newNode
     else:
         splitHorizontally = random.choice([True, False])
         if splitHorizontally:
-            splitNum = random.randint(2, roomHeight-2)
+            splitNum = random.randint(2, roomHeight//2)
             if roomHeight - splitNum <= minSize :
                 return newNode
             newNode.childA = splitDungeon(app, roomLeft, roomTop, roomWidth, splitNum, depth+1, maxDepth)
             newNode.childB = splitDungeon(app, roomLeft, roomTop+splitNum, roomWidth, roomHeight - splitNum, depth+1, maxDepth)
         
         else:#split vertically
-            splitNum = random.randint(2, roomWidth-2)
+            splitNum = random.randint(2, roomWidth//2)
             if roomWidth-splitNum <= minSize :
                 return newNode
             newNode.childA = splitDungeon(app, roomLeft, roomTop, splitNum, roomHeight, depth+1, maxDepth)
@@ -112,6 +138,37 @@ def drawDungeonCell(app, row, col, fillColor='pink'):
     drawRect(cellLeft, cellTop, cellWidth, cellHeight,
              fill=fillColor, border='black',
              borderWidth=app.cellBorderWidth)
+
+#Draw walls
+def drawWall(app):
+    for wall in app.wallPositions:
+        if wall not in app.floorPositions:
+            (row, col) = wall
+            drawDungeonCell(app, row, col, 'brown')
+
+#connect rooms
+
+def connectRooms(app, node):
+    if node is None or node.isLeaf():
+        return
+    else:
+        centerA = node.childA.roomCenter 
+        centerB = node.childB.roomCenter
+        makeTunnel(app, centerA, centerB)
+        connectRooms(app,node.childA)
+        connectRooms(app,node.childB)
+
+def makeTunnel(app, centerA, centerB):
+    (rowA, colA) = centerA
+    (rowB, colB) = centerB
+    for row in range(min(rowA, rowB), max(rowA, rowB)+1):
+        if (row, colA) in app.wallPositions:
+            app.wallPositions.remove((row, colA))
+        app.floorPositions.add((row, colA))
+    for col in range(min(colA, colB), max(colA, colB)+1):
+        if (rowA, col) in app.wallPositions:
+            app.wallPositions.remove((rowA, col))
+        app.floorPositions.add((rowA, col))
 
 
 
