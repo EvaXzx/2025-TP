@@ -3,32 +3,38 @@ from cmu_graphics import *
 from flashLight import *
 from darkMode import *
 from BSPTreeSetup import *
+from drawPacManPlayer import * 
 import random
 
-#tree that stores room information
-#each room has two children rooms because I am dividing each room binarily
-#https://www.geeksforgeeks.org/dsa/binary-space-partitioning/ 
-#https://www.geeksforgeeks.org/dsa/binary-space-partitioning/ 
-#ChatGPT Prompt: how can i build a bsp tree that stores information about rooms on a board
-#https://chatgpt.com/share/68892d01-4508-8002-bf0c-ca9f4daca284 
-#Read these websites to help me understand how to use BSP Tree class
 
-#used this to learn about random methods because we didn't learn them in class
-#https://www.w3schools.com/python/module_random.asp 
+
 
 
 
 def onAppStart(app):
+    PacManOnAppStart(app)
+    #best record(DO NOT add to reset app)
+    app.bestRecordTime = None
+    app.bestRecordTreasure = None
+    #timer
+    app.stepsPerSecond = 50
+    app.stepsTaken = 0
+    app.seconds = 120
+    app.secondsElapsed = 0
+    #game mode
+    app.gameOver = False
     app.darkMode = True
+    #board info
     app.rows = 20
     app.cols = 20
-    app.boardLeft = 50
+    app.boardLeft = 100
     app.boardTop = 75
     app.boardWidth = 400
     app.boardHeight = 400
     app.cellBorderWidth = 0.5
-    app.width = 500
-    app.height = 500
+    app.width = 600
+    app.height = 600
+    #rooms and tile categorizing
     app.curRoomLength = 12
     app.board = [[None for i in range(app.cols)]for j in range (app.rows)]
     app.roomTreeRoot = splitDungeon(app, 0, 0, app.cols, app.rows, 0, 8)
@@ -61,16 +67,21 @@ def onAppStart(app):
                 break
     
 def restApp(app):
+    app.secondsElapsed = 0
+    app.stepsPerSecond = 50
+    app.stepsTaken = 0
+    app.seconds = 120
+    app.gameOver = False
     app.darkMode = True
     app.rows = 20
     app.cols = 20
-    app.boardLeft = 50
+    app.boardLeft = 100
     app.boardTop = 75
     app.boardWidth = 400
     app.boardHeight = 400
     app.cellBorderWidth = 0.5
-    app.width = 500
-    app.height = 500
+    app.width = 600
+    app.height = 600
     app.curRoomLength = 12
     app.board = [[None for i in range(app.cols)]for j in range (app.rows)]
     app.roomTreeRoot = splitDungeon(app, 0, 0, app.cols, app.rows, 0, 8)
@@ -102,35 +113,74 @@ def restApp(app):
                 app.cy = app.boardTop + row * cellHeight + cellHeight // 2
                 break
 
-    
 
+#start screen ################
+def start_redrawAll(app):
+    drawLabel('Welcome', app.width//2, app.height//2, size = 24, bold = True)
+    drawLabel('press space to begin!', app.width//2, app.height//2+40, size = 16) 
+    if app.bestRecordTime!= None and app.bestRecordTreasure !=None:
+        bestMinute = app.bestRecordTime // 60
+        bestSecond = app.bestRecordTime%60
+        drawLabel(f'Your best record is {app.bestRecordTreasure} treasures found in {bestMinute}min{bestSecond}sec!', app.width//2, app.height//2+80, size = 16, bold = True)
+    elif app.bestRecordTime == None and app.bestRecordTreasure == None:
+        drawLabel(f'No records yet! Start playing to set a record', app.width//2, app.height//2+80, size = 16, bold = True)
 
-def redrawAll(app):
+def start_onKeyPress(app, key):
+    if key == 'space':
+        setActiveScreen('game')   
+
+#end screen ################
+def end_redrawAll(app):
+    drawLabel('Game Ended!', app.width//2, app.height//2-40, size = 24, bold = True)
+    minute = app.secondsElapsed // 60
+    second = app.secondsElapsed % 60
+    drawLabel(f'You found {5-app.treasureLeft} treasures in {minute}min{second}sec!', app.width//2, app.height//2, size = 24, bold = True)
+    bestMinute = app.bestRecordTime // 60
+    bestSecond = app.bestRecordTime%60
+    drawLabel(f'Your best record is {app.bestRecordTreasure} treasures found in {bestMinute}min{bestSecond}sec!', app.width//2, app.height//2+40, size = 24, bold = True)
+    drawLabel('press space to start a new game', app.width//2, app.height//2+60, size = 16)
+    drawLabel('press enter to go back to home screen', app.width//2, app.height//2+80, size = 16)
+
+def end_onKeyPress(app, key):
+    if key == 'space':
+        setActiveScreen('game') 
+        restApp(app) 
+    if key == 'enter':
+        print("Switching to start screen")
+        setActiveScreen('start')
+#game screen ################
+
+def game_redrawAll(app):
         drawBoard(app)
         drawBoardBorder(app)
         drawLabel('Collect Treasure!!', app.width//2, 25, size = 18)
         drawLabel('Press space bar to reset board', app.width//2, 45, size = 12)
         drawLabel('Press wasd to move around', app.width//2, 55, size = 12)
         drawLabel('Press b to toggle dark mode', app.width//2, 65, size = 12)
+        minutes = app.seconds//60
+        seconds = app.seconds%60
+        drawLabel(f'you have {minutes}min {seconds}sec left', app.width//2, 500)
         if not app.darkMode:
             drawRoomOnTree(app, app.roomTreeRoot)
             drawWall(app)
             drawBorder(app)
-            drawPlayer(app)
+            drawPacManPlayer(app)
             drawCastingLines(app)
             drawTreasure(app)
-            drawLabel(f'{app.treasureLeft} treasures left to find', app.width//2, 400, size = 18, fill = 'black', bold = True)
+            drawLabel(f'{app.treasureLeft} treasures left to find', app.width//2, 463, size = 18, fill = 'white', bold = True)
         if app.darkMode:
             drawWall(app)
             drawBorder(app)
             drawRoomOnTree(app, app.roomTreeRoot)
-            drawRect(50, 75, 400, 400, fill = 'black')
+            drawRect(100, 75, 400, 400, fill = 'black')
             drawCastingPoly(app)
             drawTreasureInDark(app)
-            drawPlayerDarkMode(app)
+            drawPacManPlayer(app)
             drawWallsInDark(app)
-            drawLabel(f'{app.treasureLeft} treasures left to find', app.width//2, 400, size = 18, fill = 'white', bold = True)
+            drawLabel(f'{app.treasureLeft} treasures left to find', app.width//2, 463, size = 18, fill = 'white', bold = True)
 
+
+# draw board ###################
 
 def drawBorder(app):
     for row in range (app.rows):
@@ -171,7 +221,7 @@ def getCellSize(app):
     cellHeight = app.boardHeight / app.rows
     return (cellWidth, cellHeight)
 
-#Draw Dungeon
+# Draw Dungeon ###########################
 
 def drawRoomOnTree(app, node):
     if node.isLeaf():
@@ -208,7 +258,8 @@ def splitDungeon(app, roomLeft, roomTop, roomWidth, roomHeight, depth, maxDepth 
     if depth == maxDepth or roomWidth <=minSize or roomHeight <=minSize:
         return newNode
     else:
-        splitHorizontally = random.choice([True, False])
+        splitHorizontally = random.choice([True, False])#used this to learn about random methods because we didn't learn them in class
+                                                        #https://www.w3schools.com/python/module_random.asp 
         if splitHorizontally:
             splitNum = random.randint(2, roomHeight//2)
             if roomHeight - splitNum <= minSize :
@@ -265,7 +316,7 @@ def makeTunnel(app, centerA, centerB):
         app.floorPositions.add((rowA, col))
 
 
-# making the player  
+# making the player  ###################
 
 def drawPlayer(app):
     drawCircle(app.cx, app.cy, 5, rotateAngle = app.angle, fill = None, border = 'black')
@@ -285,7 +336,21 @@ def getCellInfo(app, x, y):
     row = int((y-app.boardTop)/cellHeight)
     return row, col
 
-def isNotCollision(app, x, y):
+def isNotCollision(app, x, y, angle):
+    r = 10#pacMan's radius
+    if angle == None:
+        angle = app.angle
+    (edgeX, edgeY) = getRadiusEndpoint(app, x, y, r, angle)
+    row, col = getCellInfo(app, edgeX, edgeY)
+    if 0<=row<app.rows and 0 <= col < app.cols:
+        if app.board[row][col] == 'floor' or  app.board[row][col] == None or app.board[row][col] == 'Treasure':
+            return True
+        else:
+            app.showWall.add((row,col))#when it is collision, store it in the set to help the darkmode wall displays
+            return False
+    return False
+
+def isNotBeamCollision(app, x, y):
     row, col = getCellInfo(app, x, y)
     if 0<=row<app.rows and 0 <= col < app.cols:
         if app.board[row][col] == 'floor' or  app.board[row][col] == None or app.board[row][col] == 'Treasure':
@@ -295,7 +360,18 @@ def isNotCollision(app, x, y):
             return False
     return False
 
-def onStep(app):
+def game_onStep(app):
+    endGame(app)
+    if app.gameOver:
+        setActiveScreen('end')
+    # Timer
+    app.stepsTaken += 1
+    if app.stepsTaken>= app.stepsPerSecond and app.stepsTaken%50 == 0:
+        app.seconds -= 1
+        app.secondsElapsed += 1
+    #pacManPlayer
+    PacManOnStep(app)
+    #moving the player
     if app.isRotating:
         if app.key == 'a':
             app.angle += app.rotationStep 
@@ -312,8 +388,7 @@ def onStep(app):
         elif app.key == 's':
             newCx = app.cx - dx
             newCy = app.cy - dy
-        # copilot prompt for the calculation of dx and dy above: how do i modify onStep using 
-        # trigonometry and vector addition to make the direction 
+        # copilot prompt for the calculation of dx and dy above: how do i modify onStep to make the direction 
         # of movement when s and w are pressed align with the direction of the beam
         # the two conditionals above were originally written like below. 
         # i knew there was something wrong with the vector addition, but wasn't familiar enough with trig to find
@@ -324,13 +399,13 @@ def onStep(app):
         elif app.key == 's':
             dx = -app.dirVector[0]*app.d
             dy = app.dirVector[1]*app.d'''
-        if (app.key == 'w' or app.key == 's') and isNotCollision(app, newCx, newCy):
+        if (app.key == 'w' or app.key == 's') and isNotCollision(app, newCx, newCy, app.angle):
             app.cx = newCx
             app.cy = newCy
             if isTreasureCollision(app, app.cx, app.cy):
                 eatTreasure(app, app.cx, app.cy)
 
-def onKeyPress(app, key):
+def game_onKeyPress(app, key):
     if key == 'space':
         restApp(app)
     if key == 'b':
@@ -343,7 +418,7 @@ def onKeyPress(app, key):
 
 
 
-def onKeyRelease(app, key):
+def game_onKeyRelease(app, key):
     if key == 'a' or key == 'd':
         app.isRotating = False
     elif key == 'w' or key == 's':
@@ -374,7 +449,7 @@ def drawCastingLines(app):
         while r < maxRayLength:
             r+= step # increment
             testX, testY = getRadiusEndpoint(app, app.cx, app.cy, r, angle)# get the targetX, targetY after increment
-            if not isNotCollision(app, testX, testY):#check if it collides with a wall
+            if not isNotBeamCollision(app, testX, testY):#check if it collides with a wall
                 break
             targetX, targetY = testX, testY
         drawLine(app.cx, app.cy, targetX, targetY, lineWidth = 0.8, fill = 'yellow')
@@ -416,7 +491,7 @@ def drawCastingPoly(app):
             testX, testY = getRadiusEndpoint(app, app.cx, app.cy, r, angle)# get the targetX, targetY after increment
             if isTreasureCollision(app, testX, testY):
                 app.showTreasure.add((testX, testY))
-            if not isNotCollision(app, testX, testY):#check if it collides with a wall
+            if not isNotBeamCollision(app, testX, testY):#check if it collides with a wall
                 targetX, targetY = testX, testY
                 break#if not collision update targetX, targetY
             targetX, targetY = testX, testY
@@ -457,9 +532,9 @@ def drawTreasure(app):
 
 
 def placeTreasure(app):
-    for i in range (5):
-        treasure = random.choice(list(app.floorPositions))
-        print(app.treasurePosition)
+    app.treasurePosition.clear()
+    treasures = random.sample(list(app.floorPositions), 5)
+    for treasure in treasures:
         app.treasurePosition.add(treasure)
 
 
@@ -485,9 +560,21 @@ def drawTreasureInDark(app):
         drawTreasureCell(app, row, col, 'LightBlue')
         app.board[row][col] = 'Treasure'
 
-
+def endGame(app):
+    if app.treasureLeft == 0 or app.seconds <= 0:
+        checkBestRecord(app)
+        app.gameOver = True
+        setActiveScreen('end')
+        
+## keep track of best record########
+# largest num of treasures found in shortest amount of time
+def checkBestRecord(app):
+    if ((app.bestRecordTime == None and app.bestRecordTreasure == None) or 
+        (app.secondsElapsed <= app.bestRecordTime and app.bestRecordTreasure >= (5-app.treasureLeft))):
+        app.bestRecordTime = app.secondsElapsed
+        app.bestRecordTreasure = 5-app.treasureLeft
 
 
 def main():
-    runApp()
+    runAppWithScreens(initialScreen='start')
 main()
