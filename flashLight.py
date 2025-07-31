@@ -13,10 +13,12 @@ def onAppStartHelper(app):
     app.isRotating = False
     app.isMoving = False
     app.key = None
-    app.rayCastRadius = 10
+    app.rayCastRadius = 1
+    
 
-
- # rotating the player   
+ # rotating the player 
+ # https://matthew-brett.github.io/teaching/rotation_2d.html
+ # read this to understand how to use direction vector to rotate the player 
 def rotateDirVector(vector, angleDegrees):
     angleRadians = math.radians(angleDegrees)
     x, y = vector
@@ -24,9 +26,12 @@ def rotateDirVector(vector, angleDegrees):
     newY = x * math.sin(angleRadians) + y * math.cos(angleRadians) 
     return [newX, newY]     
 
-# raycasting flashlight
-
+#raycasting flashlight
 #draw line 
+def getRadiusEndpoint(app, cx, cy, r, theta):
+    return (app.cx + r*math.cos(math.radians(theta)),
+            app.cy - r*math.sin(math.radians(theta)))
+
 
 
 
