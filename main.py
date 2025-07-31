@@ -13,6 +13,9 @@ import random
 #https://chatgpt.com/share/68892d01-4508-8002-bf0c-ca9f4daca284 
 #Read these websites to help me understand how to use BSP Tree class
 
+#used this to learn about random methods because we didn't learn them in class
+#https://www.w3schools.com/python/module_random.asp 
+
 
 
 def onAppStart(app):
