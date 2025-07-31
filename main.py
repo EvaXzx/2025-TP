@@ -35,6 +35,7 @@ def onAppStart(app):
     app.showWall = set()
     app.showTreasure = set()
     app.polygonPoints = []
+    app.treasureLeft = 5
     connectRooms(app, app.roomTreeRoot)
     #categorize the tiles to make collision check easier
     for row in range(app.rows):
@@ -76,6 +77,7 @@ def restApp(app):
     app.showWall = set()
     app.showTreasure = set()
     app.polygonPoints = []
+    app.treasureLeft = 5
     connectRooms(app, app.roomTreeRoot)
     #categorize the tiles to make collision check easier
     for row in range(app.rows):
@@ -101,26 +103,21 @@ def restApp(app):
 
 
 def redrawAll(app):
+        drawBoard(app)
+        drawBoardBorder(app)
+        drawLabel('Collect Treasure!!', app.width//2, 25, size = 18)
+        drawLabel('Press space bar to reset board', app.width//2, 45, size = 12)
+        drawLabel('Press wasd to move around', app.width//2, 55, size = 12)
+        drawLabel('Press b to toggle dark mode', app.width//2, 65, size = 12)
         if not app.darkMode:
-            drawBoard(app)
-            drawBoardBorder(app)
-            drawLabel('Collect Treasure!!', app.width//2, 25, size = 18)
-            drawLabel('Press space bar to reset board', app.width//2, 45, size = 12)
-            drawLabel('Press wasd to move around', app.width//2, 55, size = 12)
-            drawLabel('Press b to toggle dark mode', app.width//2, 65, size = 12)
             drawRoomOnTree(app, app.roomTreeRoot)
             drawWall(app)
             drawBorder(app)
             drawPlayer(app)
             drawCastingLines(app)
             drawTreasure(app)
+            drawLabel(f'{app.treasureLeft} treasures left to find', app.width//2, 400, size = 18, fill = 'black', bold = True)
         if app.darkMode:
-            drawBoard(app)
-            drawBoardBorder(app)
-            drawLabel('Collect Treasure!!', app.width//2, 25, size = 18)
-            drawLabel('Press space bar to reset board', app.width//2, 45, size = 12)
-            drawLabel('Press wasd to move around', app.width//2, 55, size = 12)
-            drawLabel('Press b to toggle dark mode', app.width//2, 65, size = 12)
             drawWall(app)
             drawBorder(app)
             drawRoomOnTree(app, app.roomTreeRoot)
@@ -129,6 +126,7 @@ def redrawAll(app):
             drawTreasureInDark(app)
             drawPlayerDarkMode(app)
             drawWallsInDark(app)
+            drawLabel(f'{app.treasureLeft} treasures left to find', app.width//2, 400, size = 18, fill = 'white', bold = True)
 
 
 def drawBorder(app):
@@ -472,6 +470,7 @@ def isTreasureCollision(app, x, y):
 def eatTreasure(app, x, y):
     row, col = getCellInfo(app, x, y)
     if (row, col) in app.treasurePosition:
+        app.treasureLeft -= 1
         app.board[row][col] = 'floor'
         app.treasurePosition.remove((row, col))
 
