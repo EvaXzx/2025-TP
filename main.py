@@ -147,6 +147,7 @@ def end_onKeyPress(app, key):
         restApp(app) 
     if key == 'enter':
         print("Switching to start screen")
+        restApp(app)
         setActiveScreen('start')
 #game screen ################
 
@@ -325,6 +326,7 @@ def drawPlayer(app):
 
 #Chat GPT prompt for getCellInfo function:
 #how can I convert a player position info(app.cx, app.cy, which is in pixels) to row and col on a 2D board
+#response:
 #Key Ideas for Free Pixel Movement:
 #Player position is stored as (cx, cy) in pixels
 #You still use a direction vector and rotateDirVector() for direction
